@@ -1,8 +1,6 @@
 # Напечатайте все трехзначные числа с заданной
 # пользователем суммой цифр
 
-from itertools import permutations
-
 
 def generate_numeber(number):
     for num in range(100, 1000):
