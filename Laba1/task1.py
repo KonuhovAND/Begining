@@ -8,7 +8,8 @@ from pprint import pprint
 
 def is_item_less_than_zero(item, name):
     if item <= 0:
-        raise ValueError(f"{name.capitalize()} is less than 0, enter positive {name}")
+        raise ValueError(
+            f"{name.capitalize()} is less than 0, enter positive {name}")
 
 
 def main():
@@ -16,13 +17,15 @@ def main():
         print("3.5 years = 3 years")
         print("4.93 years = 4 years")
 
-        value = float(input("Enter amount of money u want to put(more than 0): "))
+        value = float(
+            input("Enter amount of money u want to put(more than 0): "))
         is_item_less_than_zero(value, "value")
 
         percent = float(input("Enter percent(more than 0): "))
         is_item_less_than_zero(percent, "percent")
 
-        years = int(float(input("Enter how long u want to hold money(more than 0): ")))
+        years = int(
+            float(input("Enter how long u want to hold money(more than 0): ")))
         is_item_less_than_zero(years, "years")
 
         print(f"{'YEARS':<10}{'VALUE':<5}")
