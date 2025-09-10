@@ -10,10 +10,10 @@ def is_item_less_than_zero(item, name):
 
 
 def main():
-    try:
-        print("3.5 years = 3 years")
-        print("4.93 years = 4 years")
+    print("3.5 years = 3 years")
+    print("4.93 years = 4 years")
 
+    try:
         value = float(input("Enter amount of money u want to put(more than 0): "))
         is_item_less_than_zero(value, "value")
 
