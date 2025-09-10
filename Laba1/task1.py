@@ -23,14 +23,12 @@ def main():
         years = int(float(input("Enter how long u want to hold money(more than 0): ")))
         is_item_less_than_zero(years, "years")
 
-        print(f"{'YEARS':<10}{'VALUE':<5}")
-
-        for year in range(1, years + 1):
-            value *= 1 + (percent / 100)
-            print(f"{year:<10}{round(value, 2):<5}")
 
     except Exception as exc:
         print(exc)
-
-
+    else:
+        print(f"{'YEARS':<10}{'VALUE':<5}")
+        for year in range(1, years + 1):
+                value *= 1 + (percent / 100)
+                print(f"{year:<10}{round(value, 2):<5}")
 main()

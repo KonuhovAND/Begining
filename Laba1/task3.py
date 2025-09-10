@@ -12,7 +12,7 @@ def solver(a, b, c):
     else:
         x1 = (-b + D**0.5) / (2 * a)
         x2 = (-b - D**0.5) / (2 * a)
-        print(f"First X:{x1}, Second X:{x2}")
+        print(f"First X: {x1}, Second X: {x2}")
 
 
 def main():
@@ -21,10 +21,11 @@ def main():
         a = float(input('Enter first value for "a": '))
         b = float(input('Enter second value for "b": '))
         c = float(input('Enter third value for "c": '))
-
-        solver(a, b, c)
     except Exception as exc:
         print(exc)
+    else:
+        solver(a = a,b = b,c = c)
+
 
 
 main()
