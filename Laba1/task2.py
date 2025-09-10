@@ -12,9 +12,11 @@ def main():
     try:
         number = int(input("Enter number in range 1-27: "))
         if number < 1 or number > 27:
-            raise ValueError("Enter valid number!")
-    except Exception as exc:
-        print(exc, f"{number} is not in range [1,27]")
+            # raise ValueError("Enter valid number!")
+            # print("Enter valid number!")
+            exit("Enter valid number!")
+    except ValueError as verr:
+        print(verr, f"{number} is not in range [1,27]")
     else:
         generate_numeber(number=number)
 

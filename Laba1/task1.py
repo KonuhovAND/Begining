@@ -20,10 +20,8 @@ def main():
         percent = float(input("Enter percent(more than 0): "))
         is_item_less_than_zero(percent, "percent")
 
-        years = int(float(input("Enter how long u want to hold money(more than 0): ")))
+        years = int(input("Enter how long u want to hold money(more than 0): "))
         is_item_less_than_zero(years, "years")
-
-
     except Exception as exc:
         print(exc)
     else:
