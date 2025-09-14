@@ -63,18 +63,24 @@ def solver(*coordinates, raduis: float = 0):
 def main():
     try:
         n = int(input("How many points? "))
-        radius = float(input("Please,enter raduis"))
+        radius = float(input("Please,enter raduis: "))
 
         if n < 0:
             raise ValueError("Please, enter not empty amount of coordinates!")
         if radius < 0:
-
+            raise ValueError("Please, enter positive raduis!")
     except ValueError as verr:
+        print(verr)
         n = int(input("How many points? "))
+        radius = float(input("Please,enter raduis"))
 
     coordinates = []
     for i in range(n):
-        x, y = map(float, input(f"Enter x y for point {i + 1}: ").split())
+        try:
+            x, y = map(float, input(f"Enter x y for point {i + 1}: ").split())
+        except ValueError:
+            print("Please, enter not empty data")
+            x, y = map(float, input(f"Enter x y for point {i + 1}: ").split())
         coordinates.append([x, y])
 
     radius = 0 if not radius else float(radius)
