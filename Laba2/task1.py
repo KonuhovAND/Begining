@@ -48,8 +48,7 @@ def solver(*coordinates, raduis: float = 0):
         if raduis > 0:
             print(f"Circle area is {round(math.pi * raduis**2, 2)}")
             print(f"Circle perimeter is {round(perimetr(radius=raduis), 2)}")
-        else:
-            print("Please, enter not empty coordinates or positive radius")
+
     else:
         if len(coordinates) == 3:
             print(f"Triangle area is {ploshad_treugolnika(*coordinates)}")
@@ -62,12 +61,22 @@ def solver(*coordinates, raduis: float = 0):
 
 
 def main():
-    n = int(input("How many points? "))
+    try:
+        n = int(input("How many points? "))
+        radius = float(input("Please,enter raduis"))
+
+        if n < 0:
+            raise ValueError("Please, enter not empty amount of coordinates!")
+        if radius < 0:
+
+    except ValueError as verr:
+        n = int(input("How many points? "))
+
     coordinates = []
     for i in range(n):
         x, y = map(float, input(f"Enter x y for point {i + 1}: ").split())
         coordinates.append([x, y])
-    radius = input("Please,enter raduis")
+
     radius = 0 if not radius else float(radius)
     solver(*coordinates, raduis=radius)
 
