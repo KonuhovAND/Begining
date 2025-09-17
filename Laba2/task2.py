@@ -16,17 +16,22 @@
 # модуль статистик
 import statistics as st
 import re
+def basic(*args):
+    print(f"Max - {max(args)}, min - {min(args)}, avg - {st.mean(args)}")
+def advanced(*args):
+    basic(*args)
+    print(f"Median - {st.median(args)},moda - {st.mode(args)}")
+def scientific(*args):
+    advanced(*args)
+    print(f"Avg geom - {st.geometric_mean(args)}, avg harmonic - {st.harmonic_mean(args)}")
 
 def stats_calculator(*args, mode):
     if mode == "bs":
-        print(f"Max - {max(args)}, min - {min(args)}, avg - {st.mean(args)}")
+        basic(*args)
     elif mode == "ad":
-        print(f"Max - {max(*args)}, min - {min(*args)}, avg - {st.mean(args)}")
-        print(f"Median - {st.median(args)},moda - {st.mode(args)}")
+        advanced(*args)
     elif mode == "sc":
-        print(f"Max - {max(*args)}, min - {min(*args)}, avg - {st.mean(args)}")
-        print(f"Median - {st.median(args)},moda - {st.mode(args)}")
-        print(f"Avg geom - {st.geometric_mean(args)}, avg harmonic - {st.harmonic_mean(args)}")
+        scientific(*args)
 def main():
     try:
         data = list(map(float,(input('Enter data to analyze: ')).split() ))

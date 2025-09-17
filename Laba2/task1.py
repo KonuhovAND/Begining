@@ -3,7 +3,7 @@
 # прямоугольника, треугольника и многоугольника по
 # введённым с консоли данным (координаты вершин, радиус…).
 import math
-import colorama
+
 
 
 def perimetr(*coordinates, radius: float = 0) -> float:
@@ -57,7 +57,7 @@ def solver(*coordinates, raduis: float = 0):
             print(f"Polygon area is {ploshad_mnogougolnika(*coordinates)}")
             print(f"Polygon perimeter is {round(perimetr(*coordinates), 2)}")
         else:
-            print(colorama.Back.RED + "Please enter more sides for shape")
+            print("Please enter more sides for shape")
 
 
 def main():

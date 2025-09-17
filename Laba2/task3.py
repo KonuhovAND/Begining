@@ -1,10 +1,7 @@
 import datetime
-import colorama as cm
 from pprint import pprint
 
-def what_to_do():
-
-    print(""" Напишите программу, которая проверяла бы
+""" Напишите программу, которая проверяла бы
     корректность сгенерированных дат. Основной функцией
     программы должна быть функция check_dates(*dates), которая
     принимает на вход произвольное количество дат от
@@ -14,7 +11,7 @@ def what_to_do():
     позднюю дату, список будущих дат относительно текущего дня.
     Если же функция встретила некорректную дату, но она должна
     пропустить её и вывести на консоль соответствующее
-    предупреждение """)
+    предупреждение """
 
 
 def check_dates(*dates):
@@ -33,7 +30,7 @@ def check_dates(*dates):
             if new_date > current_date:
                 future_dates.append(new_date) 
         except (ValueError,AttributeError) as er:
-            print(cm.Back.RED + f"{date} - is not valid{str(er)}")
+            print( f"{date} - is not valid{str(er)}")
     if valid_dates:
         valid_dates_str = [date.strftime('%d.%m.%y') for date in valid_dates]
         future_dates_str = [date.strftime('%d.%m.%y') for date in future_dates]
