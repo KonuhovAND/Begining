@@ -23,20 +23,21 @@ def check_dates(*dates):
     current_date = datetime.datetime.now()
     for date in dates:
         try:
-            day,month,year = map(int,date.split('.'))
-            new_date = datetime.datetime(year=year,month=month,day=day)
+            day, month, year = map(int, date.split('.'))
+            new_date = datetime.datetime(year=year, month=month, day=day)
             valid_dates.append(new_date)
-            
+
             if new_date > current_date:
-                future_dates.append(new_date) 
-        except (ValueError,AttributeError) as er:
-            print( f"{date} - is not valid{str(er)}")
+                future_dates.append(new_date)
+        except (ValueError, AttributeError) as er:
+            print(f"{date} - is not valid{str(er)}")
     if valid_dates:
         valid_dates_str = [date.strftime('%d.%m.%y') for date in valid_dates]
         future_dates_str = [date.strftime('%d.%m.%y') for date in future_dates]
         pprint(f"All valid dates + {valid_dates_str}")
         pprint(f"All future dates - {future_dates_str}")
-        print(f"Самая раняя дата - {min(valid_dates).strftime("%d.%m.%Y")},самая поздняя дата - {max(valid_dates).strftime("%d.%m.%Y")}")
+        print(
+            f"Самая раняя дата - {min(valid_dates).strftime("%d.%m.%Y")},самая поздняя дата - {max(valid_dates).strftime("%d.%m.%Y")}")
         print(f"коли-во дат - {len(valid_dates_str)}")
     else:
         print('No valid dates found!')
@@ -44,10 +45,9 @@ def check_dates(*dates):
 
 
 def main():
-    
     try:
         n = int(input("Введите кол-во дней для анализа"))
-        if n<=0:
+        if n <= 0:
             raise ValueError
     except ValueError:
         print("Please, enter positive number")
@@ -58,4 +58,6 @@ def main():
         date = input('Enter day: ')
         dates.append(date)
     check_dates(*dates)
+
+
 main()

@@ -5,7 +5,6 @@
 import math
 
 
-
 def perimetr(*coordinates, radius: float = 0) -> float:
     if coordinates:  # многоугольник
         p = 0
@@ -21,7 +20,7 @@ def perimetr(*coordinates, radius: float = 0) -> float:
 
 def distance(coordinate1, coordinate2):
     return (
-        (coordinate1[0] - coordinate2[0]) ** 2 + (coordinate1[1] - coordinate2[1]) ** 2
+            (coordinate1[0] - coordinate2[0]) ** 2 + (coordinate1[1] - coordinate2[1]) ** 2
     ) ** 0.5
 
 
@@ -46,7 +45,7 @@ def solver(*coordinates, raduis: float = 0):
     print()
     if len(coordinates) == 1:
         if raduis > 0:
-            print(f"Circle area is {round(math.pi * raduis**2, 2)}")
+            print(f"Circle area is {round(math.pi * raduis ** 2, 2)}")
             print(f"Circle perimeter is {round(perimetr(radius=raduis), 2)}")
 
     else:
