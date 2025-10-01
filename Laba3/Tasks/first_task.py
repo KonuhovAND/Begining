@@ -4,7 +4,7 @@ if len(ticket) == 6:
     first_half = sum(int(digit) for digit in ticket[:3])
     second_half = sum(int(digit) for digit in ticket[3:])
     if first_half == second_half:
-        print("Счастливый билет!")
+        print("Счастливый билет! ")
     else:
         print("Обычный билет.")
 else:
