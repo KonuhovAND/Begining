@@ -10,4 +10,4 @@ for char in text:
     else:
         result += char
 
-print("Зашифрованный текст:", result)
+print("Зашифрованный текст: ", result)
