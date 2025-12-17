@@ -1,0 +1,101 @@
+from pathlib import Path
+from itertools import combinations
+from typing import Dict, Set, List, Tuple
+
+
+def read_text_lines(path: str) -> List[str]:
+    """Читает текстовый файл и возвращает список непустых строк"""
+    p = Path(path)
+    if p.suffix.lower() != ".txt":
+        raise ValueError("Нужен файл с расширением .txt")
+    if not p.exists() or not p.is_file():
+        raise FileNotFoundError("Файл не найден")
+
+    try:
+        text = p.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        # Комментарий: часто в учебных файлах встречается Windows-1251
+        text = p.read_text(encoding="cp1251")
+
+    lines = []
+    for line in text.splitlines():
+        s = line.strip()
+        if s:
+            lines.append(s)
+    return lines
+
+
+def parse_friend_line(line: str) -> Tuple[str, str]:
+    """Парсит строку вида: person1 --- person2"""
+    if "---" not in line:
+        raise ValueError(f"Строка не соответствует формату 'person_1 --- person_2': {line}")
+
+    left, right = line.split("---", 1)
+    p1 = left.strip()
+    p2 = right.strip()
+
+    if not p1 or not p2:
+        raise ValueError(f"Пустое имя в строке: {line}")
+    if p1 == p2:
+        raise ValueError(f"Сам с собой дружить нельзя: {line}")
+
+    return p1, p2
+
+
+def build_friends_dict(lines: List[str]) -> Dict[str, Set[str]]:
+    """Строит словарь друзей из списка строк"""
+    friends: Dict[str, Set[str]] = {}
+
+    for line in lines:
+        p1, p2 = parse_friend_line(line)
+
+        # Комментарий: дружбу считаем взаимной (неориентированный граф)
+        friends.setdefault(p1, set()).add(p2)
+        friends.setdefault(p2, set()).add(p1)
+
+    return friends
+
+
+def find_pairs_with_common_friends(friends: Dict[str, Set[str]], min_common: int = 2) -> List[Tuple[str, str, Set[str]]]:
+    """Находит пары людей с >= min_common общих друзей"""
+    people = sorted(friends.keys())
+    result: List[Tuple[str, str, Set[str]]] = []
+
+    for a, b in combinations(people, 2):
+        # Комментарий: используем стандартное пересечение множеств (&)
+        common = friends.get(a, set()) & friends.get(b, set())
+        if len(common) >= min_common:
+            result.append((a, b, common))
+    return result
+
+
+def main():
+    print("Задание 1: Файл дружбы -> пары с >=2 общих друзей")
+    in_path = input("Введите путь к txt-файлу с дружбой: ").strip()
+    out_path = input("Введите путь для результата (txt): ").strip()
+
+    try:
+        lines = read_text_lines(in_path)
+        friends = build_friends_dict(lines)
+        pairs = find_pairs_with_common_friends(friends, min_common=2)
+
+        if not pairs:
+            content = "Пар с двумя и более общими друзьями не найдено.
+"
+        else:
+            rows = []
+            for a, b, common in pairs:
+                rows.append(f"{a} -- {b} | общие друзья ({len(common)}): {', '.join(sorted(common))}")
+            content = "
+".join(rows) + "
+"
+
+        Path(out_path).write_text(content, encoding="utf-8")
+        print(f"Готово. Записано в: {out_path}")
+
+    except (ValueError, FileNotFoundError, OSError) as e:
+        print(f"Ошибка: {e}")
+
+
+if __name__ == "__main__":
+    main()
