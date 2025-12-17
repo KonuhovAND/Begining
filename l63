@@ -1,0 +1,104 @@
+# 3.py
+import os
+import re
+from collections import defaultdict
+
+def find_py_files(directory):
+    py_files = []
+    
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if file.endswith('.py'):
+                py_files.append(os.path.join(root, file))
+    
+    return py_files
+
+def extract_imports(filepath):
+    imports = []
+    
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith('import ') or line.startswith('from '):
+                    imports.append(line)
+    except Exception as e:
+        print(f"Предупреждение: не удалось прочитать {filepath}: {e}")
+    
+    return imports
+
+def group_imports(all_imports):
+    simple_imports = set()
+    from_imports = defaultdict(set)
+    
+    for imp in all_imports:
+        if imp.startswith('from '):
+            match = re.match(r'froms+(S+)s+imports+(.+)', imp)
+            if match:
+                module = match.group(1)
+                items = match.group(2)
+                
+                # Разбиваем импорты через запятую
+                for item in items.split(','):
+                    item = item.strip()
+                    from_imports[module].add(item)
+        
+        elif imp.startswith('import '):
+            simple_imports.add(imp)
+    
+    return simple_imports, from_imports
+
+def write_imports_file(simple_imports, from_imports, output_file='all_imports.py'):
+    with open(output_file, 'w', encoding='utf-8') as f:
+        if simple_imports:
+            for imp in sorted(simple_imports):
+                f.write(f"{imp}
+")
+            f.write("
+")
+        
+        if from_imports:
+            for module in sorted(from_imports.keys()):
+                items = sorted(from_imports[module])
+                f.write(f"from {module} import {', '.join(items)}
+")
+
+def main():
+    try:
+        directory = input("Введите путь к директории (Enter для текущей): ").strip()
+        if not directory:
+            directory = "."
+        
+        if not os.path.exists(directory):
+            raise FileNotFoundError(f"Директория {directory} не найдена")
+        
+        print("
+Ищу .py файлы...")
+        py_files = find_py_files(directory)
+        print(f"Найдено файлов: {len(py_files)}")
+        
+        all_imports = []
+        for py_file in py_files:
+            imports = extract_imports(py_file)
+            all_imports.extend(imports)
+            print(f"  {py_file}: {len(imports)} импортов")
+        
+        print("
+Группирую импорты...")
+        simple_imports, from_imports = group_imports(all_imports)
+        
+        output_file = "all_imports.py"
+        write_imports_file(simple_imports, from_imports, output_file)
+        
+        print(f"
+✓ Импорты сохранены в {output_file}")
+        print(f"  Обычных import: {len(simple_imports)}")
+        print(f"  Сгруппированных from import: {len(from_imports)}")
+        
+    except FileNotFoundError as e:
+        print(f"Ошибка: {e}")
+    except Exception as e:
+        print(f"Ошибка: {e}")
+
+if __name__ == "__main__":
+    main()
