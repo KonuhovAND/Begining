@@ -1,0 +1,170 @@
+import re
+from collections import defaultdict
+
+
+def validate_file_path(file_path):
+    """Проверяет, что файл существует и имеет расширение .txt."""
+    try:
+        if not file_path.endswith('.txt'):
+            raise ValueError(f"Файл должен иметь расширение .txt")
+        with open(file_path, 'r', encoding='utf-8') as f:
+            pass  # Просто проверяем, что файл можно открыть
+        return True
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Файл '{file_path}' не найден")
+    except Exception as e:
+        raise ValueError(f"Ошибка при проверке файла: {e}")
+
+
+def parse_weather_line(line):
+    """
+    Парсит строку формата 'YYYY-MM-DD;temperature'.
+    Использует регулярные выражения для валидации.
+    """
+    try:
+        # Регулярка: год-месяц-день;температура (может быть отрицательной)
+        match = re.match(r'(d{4})-(d{2})-(d{2});([-+]?d+.?d*)', line.strip())
+        
+        if not match:
+            raise ValueError(f"Неверный формат строки")
+        
+        year, month, day, temp = match.groups()
+        month = int(month)
+        temp = float(temp)
+        
+        # Проверяем корректность месяца
+        if not (1 <= month <= 12):
+            raise ValueError(f"Месяц должен быть от 1 до 12, получено: {month}")
+        
+        return month, temp
+    except Exception as e:
+        raise ValueError(f"Ошибка при парсинге строки '{line}': {e}")
+
+
+def read_weather_data(file_path):
+    """
+    Читает данные о температуре из файла.
+    Возвращает словарь вида {месяц: [температуры...]}.
+    """
+    validate_file_path(file_path)
+    
+    # defaultdict автоматически создаёт пустой список для нового ключа
+    monthly_temps = defaultdict(list)
+    errors = []
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            for line_num, line in enumerate(f, 1):
+                line = line.strip()
+                if not line:
+                    continue
+                
+                try:
+                    month, temp = parse_weather_line(line)
+                    monthly_temps[month].append(temp)
+                except ValueError as e:
+                    errors.append(f"Строка {line_num}: {e}")
+        
+        if errors:
+            print("⚠️  Обнаружены ошибки при парсинге:")
+            for error in errors[:5]:  # Показываем первые 5 ошибок
+                print(f"  {error}")
+            if len(errors) > 5:
+                print(f"  ... и ещё {len(errors) - 5} ошибок")
+        
+        if not monthly_temps:
+            raise ValueError("В файле не найдено корректных данных")
+        
+        return monthly_temps
+    except IOError as e:
+        raise IOError(f"Ошибка при чтении файла: {e}")
+
+
+def calculate_statistics(monthly_temps):
+    """Вычисляет среднюю, максимальную и минимальную температуру по месяцам."""
+    try:
+        statistics = {}
+        
+        for month in sorted(monthly_temps.keys()):
+            temps = monthly_temps[month]
+            
+            if not temps:
+                continue
+            
+            avg_temp = sum(temps) / len(temps)
+            max_temp = max(temps)
+            min_temp = min(temps)
+            
+            statistics[month] = {
+                'average': avg_temp,
+                'maximum': max_temp,
+                'minimum': min_temp,
+                'count': len(temps)
+            }
+        
+        return statistics
+    except Exception as e:
+        raise ValueError(f"Ошибка при расчёте статистики: {e}")
+
+
+def format_month_name(month_num):
+    """Преобразует номер месяца в русское название."""
+    month_names = {
+        1: "Январь", 2: "Февраль", 3: "Март", 4: "Апрель",
+        5: "Май", 6: "Июнь", 7: "Июль", 8: "Август",
+        9: "Сентябрь", 10: "Октябрь", 11: "Ноябрь", 12: "Декабрь"
+    }
+    return month_names.get(month_num, f"Месяц {month_num}")
+
+
+def print_statistics(statistics):
+    """Красиво выводит статистику на консоль в виде таблицы."""
+    print("
+" + "=" * 80)
+    print("СТАТИСТИКА ТЕМПЕРАТУР ПО МЕСЯЦАМ")
+    print("=" * 80 + "
+")
+    
+    for month in sorted(statistics.keys()):
+        stats = statistics[month]
+        month_name = format_month_name(month)
+        
+        print(f"{month_name:12} | Средняя: {stats['average']:7.2f}°C | "
+              f"Макс: {stats['maximum']:7.2f}°C | Мин: {stats['minimum']:7.2f}°C | "
+              f"Дней: {stats['count']:3}")
+    
+    print("
+" + "=" * 80)
+
+
+def process_weather_file(file_path):
+    """Основная функция для обработки файла погодных данных."""
+    try:
+        print(f"Чтение файла: {file_path}")
+        monthly_temps = read_weather_data(file_path)
+        
+        print(f"✓ Найдено {sum(len(temps) for temps in monthly_temps.values())} "
+              f"записей из {len(monthly_temps)} месяцев
+")
+        
+        statistics = calculate_statistics(monthly_temps)
+        print_statistics(statistics)
+        
+        return statistics
+    except Exception as e:
+        print(f"❌ Ошибка при обработке файла: {e}")
+        raise
+
+
+# Основная программа
+if __name__ == "__main__":
+    try:
+        file_path = input("Введите путь до файла weather.txt (или Enter для 'weather.txt'): ").strip()
+        if not file_path:
+            file_path = "weather.txt"
+        
+        weather_stats = process_weather_file(file_path)
+        print("✅ Задание 2 выполнено успешно!")
+        
+    except Exception as e:
+        print(f"❌ Ошибка: {e}")
