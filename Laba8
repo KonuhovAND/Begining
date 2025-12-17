@@ -1,1 +1,158 @@
-d
+import os
+import re
+from collections import Counter
+from pathlib import Path
+
+
+def validate_directory_path(path_str):
+    """Проверяет корректность пути к директории."""
+    try:
+        path = Path(path_str)
+        if not path.exists():
+            raise FileNotFoundError(f"Путь '{path_str}' не существует")
+        if not path.is_dir():
+            raise NotADirectoryError(f"'{path_str}' это не директория")
+        return path
+    except Exception as e:
+        raise ValueError(f"Ошибка при проверке пути: {e}")
+
+
+def get_txt_files(directory_path):
+    """Возвращает список всех .txt файлов в директории."""
+    try:
+        txt_files = list(directory_path.glob("*.txt"))
+        if not txt_files:
+            raise FileNotFoundError(f"В директории '{directory_path}' не найдены .txt файлы")
+        return txt_files
+    except Exception as e:
+        raise IOError(f"Ошибка при поиске текстовых файлов: {e}")
+
+
+def clean_text(text):
+    """
+    Удаляет все небуквенные символы (кроме пробелов) и приводит к нижнему регистру.
+    Использует регулярные выражения для обработки текста.
+    """
+    # Оставляем только буквы (русские и латинские) и пробелы
+    cleaned = re.sub(r'[^а-яёА-ЯЁa-zA-Zs]', '', text)
+    return cleaned.lower()
+
+
+def read_and_process_file(file_path):
+    """Читает файл, очищает текст и возвращает его."""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            text = f.read()
+        return clean_text(text)
+    except Exception as e:
+        raise IOError(f"Ошибка при чтении файла '{file_path}': {e}")
+
+
+def get_top_words(text, top_n=10):
+    """
+    Получает словарь top_n наиболее часто встречаемых слов.
+    Использует Counter для эффективного подсчёта.
+    """
+    try:
+        words = text.split()
+        if not words:
+            return {}
+        
+        # Counter автоматически считает частоту каждого слова
+        word_counter = Counter(words)
+        
+        # Берём топ n слов и конвертируем в обычный словарь
+        top_words_dict = dict(word_counter.most_common(top_n))
+        
+        # Сортируем по ключу (слово) для красивого вывода
+        return dict(sorted(top_words_dict.items()))
+    except Exception as e:
+        raise ValueError(f"Ошибка при подсчёте слов: {e}")
+
+
+def process_directory(directory_path):
+    """Обрабатывает все .txt файлы в директории и возвращает результаты."""
+    validated_path = validate_directory_path(directory_path)
+    txt_files = get_txt_files(validated_path)
+    
+    results = {}  # Словарь результатов для каждого файла
+    all_words_counter = Counter()  # Счётчик для всех слов сразу
+    
+    try:
+        for file_path in sorted(txt_files):
+            print(f"Обработка: {file_path.name}")
+            
+            # Читаем и очищаем текст
+            cleaned_text = read_and_process_file(file_path)
+            
+            # Получаем топ 10 слов для этого файла
+            top_words = get_top_words(cleaned_text, top_n=10)
+            results[file_path.name] = top_words
+            
+            # Добавляем слова в глобальный счётчик
+            words = cleaned_text.split()
+            all_words_counter.update(words)
+        
+        # Получаем топ 10 слов для всех файлов вместе
+        all_words_dict = dict(all_words_counter.most_common(10))
+        all_words_dict = dict(sorted(all_words_dict.items()))
+        
+        return results, all_words_dict
+    except Exception as e:
+        raise RuntimeError(f"Ошибка при обработке директории: {e}")
+
+
+def write_results_to_file(results, all_words_dict, output_file="result.txt"):
+    """Записывает результаты в файл result.txt."""
+    try:
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write("=" * 80 + "
+")
+            f.write("РЕЗУЛЬТАТЫ АНАЛИЗА ТЕКСТОВЫХ ФАЙЛОВ
+")
+            f.write("=" * 80 + "
+
+")
+            
+            # Результаты по каждому файлу
+            for filename, words_dict in sorted(results.items()):
+                f.write(f"Файл: {filename}
+")
+                f.write("-" * 40 + "
+")
+                for word, count in words_dict.items():
+                    f.write(f"  {word}: {count}
+")
+                f.write("
+")
+            
+            # Общая статистика
+            f.write("=" * 80 + "
+")
+            f.write("СТАТИСТИКА ДЛЯ ВСЕХ ФАЙЛОВ ВМЕСТЕ
+")
+            f.write("=" * 80 + "
+")
+            for word, count in all_words_dict.items():
+                f.write(f"  {word}: {count}
+")
+        
+        print(f"
+Результаты успешно сохранены в '{output_file}'")
+    except Exception as e:
+        raise IOError(f"Ошибка при записи в файл: {e}")
+
+
+# Основная программа
+if __name__ == "__main__":
+    try:
+        directory = input("Введите путь до директории с текстовыми файлами (или Enter для '.'): ").strip()
+        if not directory:
+            directory = "."
+        
+        results, all_words = process_directory(directory)
+        write_results_to_file(results, all_words)
+        print("✅ Задание 1 выполнено успешно!")
+        
+    except Exception as e:
+        print(f"❌ Ошибка: {e}")
