@@ -1,0 +1,196 @@
+from pathlib import Path
+from typing import Dict, Set, List, Tuple
+
+
+def read_text_lines(path: str) -> List[str]:
+    """Читает текстовый файл и возвращает список непустых строк"""
+    p = Path(path)
+    if p.suffix.lower() != ".txt":
+        raise ValueError("Нужен файл с расширением .txt")
+    if not p.exists() or not p.is_file():
+        raise FileNotFoundError("Файл не найден")
+
+    try:
+        text = p.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        # Комментарий: попытка с альтернативной кодировкой
+        text = p.read_text(encoding="cp1251")
+
+    lines = []
+    for line in text.splitlines():
+        s = line.strip()
+        if s:
+            lines.append(s)
+    return lines
+
+
+def parse_student_skills_line(line: str) -> Tuple[str, Set[str]]:
+    """
+    Парсит строку вида: Student: skill1, skill2, skill3
+    Поддерживает разделители ',' и ';'
+    """
+    if ":" not in line:
+        raise ValueError(f"Ожидается формат 'Студент: навыки': {line}")
+
+    name, skills_part = [x.strip() for x in line.split(":", 1)]
+    if not name:
+        raise ValueError(f"Пустое имя студента: {line}")
+
+    if not skills_part:
+        return name, set()
+
+    # Комментарий: normalize разделители и создаем множество навыков
+    raw = skills_part.replace(";", ",")
+    skills = {s.strip() for s in raw.split(",") if s.strip()}
+
+    return name, skills
+
+
+def load_students_skills(path: str) -> Dict[str, Set[str]]:
+    """Загружает словарь студент -> множество навыков из файла"""
+    lines = read_text_lines(path)
+    data: Dict[str, Set[str]] = {}
+    for line in lines:
+        name, skills = parse_student_skills_line(line)
+        if name in data:
+            # Комментарий: если студент встречается несколько раз, объединяем навыки через |=
+            data[name] |= skills
+        else:
+            data[name] = skills
+    return data
+
+
+def groups_with_same_skills(students: Dict[str, Set[str]]) -> Dict[frozenset, List[str]]:
+    """Находит группы студентов с одинаковыми навыками"""
+    groups: Dict[frozenset, List[str]] = {}
+    for name, skills in students.items():
+        # Комментарий: frozenset используем как ключ, т.к. set не hashable
+        key = frozenset(skills)
+        groups.setdefault(key, []).append(name)
+
+    # Комментарий: оставляем только группы размером >=2
+    return {k: sorted(v) for k, v in groups.items() if len(v) >= 2}
+
+
+def superset_students(students: Dict[str, Set[str]]) -> List[str]:
+    """Находит студентов, чьи навыки - надмножество хотя бы для одного студента"""
+    names = list(students.keys())
+    result = set()
+
+    for a in names:
+        sa = students[a]
+        for b in names:
+            if a == b:
+                continue
+            sb = students[b]
+
+            # Комментарий: используем строгое надмножество (>), чтобы исключить равенство
+            if sa > sb:
+                result.add(a)
+                break
+
+    return sorted(result)
+
+
+def students_with_max_skills(students: Dict[str, Set[str]]) -> List[str]:
+    """Находит студентов с максимальным количеством навыков"""
+    if not students:
+        return []
+    max_len = max(len(s) for s in students.values())
+    return sorted([name for name, skills in students.items() if len(skills) == max_len])
+
+
+def jaccard(a: Set[str], b: Set[str]) -> float:
+    """
+    Коэффициент Жаккарда = |A∩B| / |A∪B|
+    Если оба множества пустые, сходство = 1.0
+    """
+    union = a | b
+    inter = a & b
+    if not union:
+        return 1.0
+    return len(inter) / len(union)
+
+
+def jaccard_matrix(students: Dict[str, Set[str]]) -> Tuple[List[str], List[List[float]]]:
+    """Вычисляет матрицу сходства Жаккара между всеми студентами"""
+    names = sorted(students.keys())
+    matrix: List[List[float]] = []
+    for i, a in enumerate(names):
+        row = []
+        for j, b in enumerate(names):
+            row.append(jaccard(students[a], students[b]))
+        matrix.append(row)
+    return names, matrix
+
+
+def format_task3_report(students: Dict[str, Set[str]]) -> str:
+    """Формирует полный отчет по всем подзаданиям a-d"""
+    parts: List[str] = []
+
+    # a) Группы студентов с одинаковыми навыками
+    groups = groups_with_same_skills(students)
+    parts.append("a) Группы студентов с одинаковыми навыками:")
+    if not groups:
+        parts.append("  Нет групп (нет совпадающих наборов навыков).")
+    else:
+        for skills_fs, names in groups.items():
+            skills_list = ", ".join(sorted(skills_fs)) if skills_fs else "(нет навыков)"
+            parts.append(f"  {names} -> {{{skills_list}}}")
+
+    # b) Студенты-надмножества
+    sup = superset_students(students)
+    parts.append("
+b) Студенты, чьи навыки — надмножество хотя бы для одного студента:")
+    parts.append("  " + (", ".join(sup) if sup else "Нет."))
+
+    # c) Студенты с максимумом навыков
+    max_students = students_with_max_skills(students)
+    parts.append("
+c) Студенты с самым большим количеством навыков:")
+    if not max_students:
+        parts.append("  Нет данных.")
+    else:
+        max_count = len(students[max_students[0]])
+        parts.append(f"  ({max_count} навыков) " + ", ".join(max_students))
+
+    # d) Матрица Жаккара
+    names, mat = jaccard_matrix(students)
+    parts.append("
+d) Матрица сходства (коэффициент Жаккарда):")
+
+    header = " " * 12 + " ".join(f"{n:>10}" for n in names)
+    parts.append(header)
+    for n, row in zip(names, mat):
+        parts.append(f"{n:>10}  " + " ".join(f"{v:10.3f}" for v in row))
+
+    return "
+".join(parts) + "
+"
+
+
+def main():
+    print("Задание 3: Студенты и навыки + аналитика")
+    in_path = input("Введите путь к txt-файлу (Студент: навыки): ").strip()
+    mode = input("Куда выводить? (1 - консоль, 2 - в файл): ").strip()
+
+    try:
+        students = load_students_skills(in_path)
+        report = format_task3_report(students)
+
+        if mode == "1":
+            print("
+" + report)
+        elif mode == "2":
+            out_path = input("Введите путь для результата (txt): ").strip()
+            Path(out_path).write_text(report, encoding="utf-8")
+            print(f"Готово. Записано в: {out_path}")
+        else:
+            raise ValueError("Нужно выбрать 1 или 2")
+
+    except (ValueError, FileNotFoundError, OSError) as e:
+        print(f"Ошибка: {e}")
+
+
+if __name__ == "__main__":
+    main()
