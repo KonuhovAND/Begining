@@ -1,0 +1,374 @@
+from __future__ import annotations
+
+from pathlib import Path
+from itertools import combinations
+from typing import Dict, Set, List, Tuple
+
+
+# ------------------------ Общие утилиты ------------------------ #
+
+def read_text_lines(path: str) -> List[str]:
+    """
+    Читает текстовый файл и возвращает список непустых строк (strip),
+    пропуская пустые/пробельные.
+    """
+    p = Path(path)
+    if p.suffix.lower() != ".txt":
+        raise ValueError("Нужен файл с расширением .txt")
+    if not p.exists() or not p.is_file():
+        raise FileNotFoundError("Файл не найден")
+
+    try:
+        text = p.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        # Комментарий: часто в учебных файлах встречается Windows-1251,
+        # поэтому даём второй шанс с другой кодировкой.
+        text = p.read_text(encoding="cp1251")
+
+    lines = []
+    for line in text.splitlines():
+        s = line.strip()
+        if s:
+            lines.append(s)
+    return lines
+
+
+def safe_write_text(path: str, content: str) -> None:
+    p = Path(path)
+    p.write_text(content, encoding="utf-8")
+
+
+# ------------------------ Задание 1 ------------------------ #
+# Файл дружбы: "person_1 --- person_2"
+# Нужно: словарь человек -> множество друзей
+# и записать в файл пары людей, имеющих >= 2 общих друзей.
+
+def parse_friend_line(line: str) -> Tuple[str, str]:
+    """
+    Парсит строку вида: person1 --- person2
+    """
+    if "---" not in line:
+        raise ValueError(f"Строка не соответствует формату 'person_1 --- person_2': {line}")
+
+    left, right = line.split("---", 1)
+    p1 = left.strip()
+    p2 = right.strip()
+
+    if not p1 or not p2:
+        raise ValueError(f"Пустое имя в строке: {line}")
+    if p1 == p2:
+        raise ValueError(f"Сам с собой дружить нельзя (в рамках задачи): {line}")
+
+    return p1, p2
+
+
+def build_friends_dict(lines: List[str]) -> Dict[str, Set[str]]:
+    friends: Dict[str, Set[str]] = {}
+
+    for line in lines:
+        p1, p2 = parse_friend_line(line)
+
+        # Комментарий: дружбу считаем взаимной (неориентированный граф),
+        # поэтому добавляем связь в обе стороны.
+        friends.setdefault(p1, set()).add(p2)
+        friends.setdefault(p2, set()).add(p1)
+
+    return friends
+
+
+def find_pairs_with_common_friends(friends: Dict[str, Set[str]], min_common: int = 2) -> List[Tuple[str, str, Set[str]]]:
+    people = sorted(friends.keys())
+    result: List[Tuple[str, str, Set[str]]] = []
+
+    for a, b in combinations(people, 2):
+        common = friends.get(a, set()) & friends.get(b, set())  # стандартная операция пересечения
+        if len(common) >= min_common:
+            result.append((a, b, common))
+    return result
+
+
+def task1() -> None:
+    print("
+[Задание 1] Файл дружбы -> пары с >=2 общих друзей")
+    in_path = input("Введите путь к txt-файлу с дружбой: ").strip()
+    out_path = input("Введите путь для результата (txt): ").strip()
+
+    try:
+        lines = read_text_lines(in_path)
+        friends = build_friends_dict(lines)
+        pairs = find_pairs_with_common_friends(friends, min_common=2)
+
+        if not pairs:
+            content = "Пар с двумя и более общими друзьями не найдено.
+"
+        else:
+            # Комментарий: форматируем так, чтобы было понятно, кто с кем и какие общие друзья.
+            rows = []
+            for a, b, common in pairs:
+                rows.append(f"{a} -- {b} | общие друзья ({len(common)}): {', '.join(sorted(common))}")
+            content = "
+".join(rows) + "
+"
+
+        safe_write_text(out_path, content)
+        print(f"Готово. Записано в: {out_path}")
+
+    except (ValueError, FileNotFoundError, OSError) as e:
+        print(f"Ошибка: {e}")
+
+
+# ------------------------ Задание 2 ------------------------ #
+# Словарь: ключ = автор, значение = список/множество книг
+# Дополнение данными от пользователя, поиск по автору.
+
+def task2() -> None:
+    print("
+[Задание 2] Словарь автор -> книги")
+
+    authors: Dict[str, Set[str]] = {}
+
+    print("Ввод книг. Формат: Автор; Название")
+    print("Пустая строка — закончить ввод.")
+
+    while True:
+        s = input("Введите строку: ").strip()
+        if not s:
+            break
+
+        try:
+            if ";" not in s:
+                raise ValueError("Нужен формат: Автор; Название")
+
+            author, title = [part.strip() for part in s.split(";", 1)]
+            if not author or not title:
+                raise ValueError("Автор и название не должны быть пустыми")
+
+            authors.setdefault(author, set()).add(title)
+
+        except ValueError as e:
+            print(f"Ошибка ввода: {e}")
+
+    if not authors:
+        print("Данные не введены.")
+        return
+
+    print("
+Режим поиска. Введите фамилию/имя автора (пустая строка — выход).")
+    while True:
+        q = input("Автор: ").strip()
+        if not q:
+            break
+
+        # Комментарий: выводим все книги автора или сообщение, что автора нет в словаре.
+        books = authors.get(q)
+        if not books:
+            print("Такого автора нет в словаре.")
+        else:
+            print("Книги:")
+            for t in sorted(books):
+                print(f"- {t}")
+
+
+# ------------------------ Задание 3 ------------------------ #
+# Файл: словарь студент -> множество навыков (строки)
+# Нужно:
+# a) группы студентов с одинаковыми навыками
+# b) студентов, чьи навыки — надмножество хотя бы для одного студента
+# c) студентов с максимумом навыков
+# d) матрицу Жаккара между всеми студентами
+
+def parse_student_skills_line(line: str) -> Tuple[str, Set[str]]:
+    """
+    Поддерживаем распространённый формат:
+    Student: skill1, skill2, skill3
+    Также допускаем разделители навыков: ',' или ';'
+    """
+    if ":" not in line:
+        raise ValueError(f"Ожидается формат 'Студент: навыки': {line}")
+
+    name, skills_part = [x.strip() for x in line.split(":", 1)]
+    if not name:
+        raise ValueError(f"Пустое имя студента: {line}")
+
+    if not skills_part:
+        # Комментарий: пустой список навыков допустим, это просто пустое множество.
+        return name, set()
+
+    # Комментарий: навыки в задании — строки, поэтому приводим к множеству строк,
+    # убираем пустые элементы и лишние пробелы.
+    raw = skills_part.replace(";", ",")
+    skills = {s.strip() for s in raw.split(",") if s.strip()}
+
+    return name, skills
+
+
+def load_students_skills(path: str) -> Dict[str, Set[str]]:
+    lines = read_text_lines(path)
+    data: Dict[str, Set[str]] = {}
+    for line in lines:
+        name, skills = parse_student_skills_line(line)
+        if name in data:
+            # Комментарий: если студент встречается несколько раз, логично объединить навыки через union.
+            data[name] |= skills
+        else:
+            data[name] = skills
+    return data
+
+
+def groups_with_same_skills(students: Dict[str, Set[str]]) -> Dict[frozenset, List[str]]:
+    groups: Dict[frozenset, List[str]] = {}
+    for name, skills in students.items():
+        key = frozenset(skills)
+        groups.setdefault(key, []).append(name)
+
+    # Комментарий: оставляем только группы размером >=2 (иначе это не "группа").
+    return {k: sorted(v) for k, v in groups.items() if len(v) >= 2}
+
+
+def superset_students(students: Dict[str, Set[str]]) -> List[str]:
+    names = list(students.keys())
+    result = set()
+
+    for a in names:
+        sa = students[a]
+        for b in names:
+            if a == b:
+                continue
+            sb = students[b]
+
+            # Комментарий: используем стандартную проверку надмножества (>=),
+            # и требуем "хотя бы для одного" — то есть нашлось b, для которого sa надмножество sb.
+            if sa >= sb:
+                # Чтобы "надмножество" не было тривиальным равенством, можно требовать строгое (>).
+                # Но в тексте задания сказано "надмножеством", обычно это допускает и строгое, и нестрогое.
+                # Сделаем строгое, чтобы смысл был более полезным:
+                if sa > sb:
+                    result.add(a)
+                    break
+
+    return sorted(result)
+
+
+def students_with_max_skills(students: Dict[str, Set[str]]) -> List[str]:
+    if not students:
+        return []
+    max_len = max(len(s) for s in students.values())
+    return sorted([name for name, skills in students.items() if len(skills) == max_len])
+
+
+def jaccard(a: Set[str], b: Set[str]) -> float:
+    """
+    Коэффициент Жаккара = |A∩B| / |A∪B|
+    Если оба множества пустые, принято считать сходство 1.0.
+    """
+    union = a | b
+    inter = a & b
+    if not union:
+        return 1.0
+    return len(inter) / len(union)
+
+
+def jaccard_matrix(students: Dict[str, Set[str]]) -> Tuple[List[str], List[List[float]]]:
+    names = sorted(students.keys())
+    matrix: List[List[float]] = []
+    for i, a in enumerate(names):
+        row = []
+        for j, b in enumerate(names):
+            row.append(jaccard(students[a], students[b]))
+        matrix.append(row)
+    return names, matrix
+
+
+def format_task3_report(students: Dict[str, Set[str]]) -> str:
+    parts: List[str] = []
+
+    # a)
+    groups = groups_with_same_skills(students)
+    parts.append("a) Группы студентов с одинаковыми навыками:")
+    if not groups:
+        parts.append("  Нет групп (нет совпадающих наборов навыков).")
+    else:
+        for skills_fs, names in groups.items():
+            skills_list = ", ".join(sorted(skills_fs)) if skills_fs else "(нет навыков)"
+            parts.append(f"  {names} -> {{{skills_list}}}")
+
+    # b)
+    sup = superset_students(students)
+    parts.append("
+b) Студенты, чьи навыки — надмножество хотя бы для одного студента (строгое):")
+    parts.append("  " + (", ".join(sup) if sup else "Нет."))
+
+    # c)
+    max_students = students_with_max_skills(students)
+    parts.append("
+c) Студенты с самым большим количеством навыков:")
+    if not max_students:
+        parts.append("  Нет данных.")
+    else:
+        max_count = len(students[max_students[0]])
+        parts.append(f"  ({max_count} навыков) " + ", ".join(max_students))
+
+    # d)
+    names, mat = jaccard_matrix(students)
+    parts.append("
+d) Матрица сходства (коэффициент Жаккарда):")
+
+    # Комментарий: делаем простую табличную разметку в текст, чтобы можно было сохранить в файл.
+    header = " " * 12 + " ".join(f"{n:>10}" for n in names)
+    parts.append(header)
+    for n, row in zip(names, mat):
+        parts.append(f"{n:>10}  " + " ".join(f"{v:10.3f}" for v in row))
+
+    return "
+".join(parts) + "
+"
+
+
+def task3() -> None:
+    print("
+[Задание 3] Студенты и навыки + аналитика")
+    in_path = input("Введите путь к txt-файлу (Студент: навыки): ").strip()
+    mode = input("Куда выводить? (1 - консоль, 2 - в файл): ").strip()
+
+    try:
+        students = load_students_skills(in_path)
+        report = format_task3_report(students)
+
+        if mode == "1":
+            print("
+" + report)
+        elif mode == "2":
+            out_path = input("Введите путь для результата (txt): ").strip()
+            safe_write_text(out_path, report)
+            print(f"Готово. Записано в: {out_path}")
+        else:
+            raise ValueError("Нужно выбрать 1 или 2")
+
+    except (ValueError, FileNotFoundError, OSError) as e:
+        print(f"Ошибка: {e}")
+
+
+# ------------------------ Меню ------------------------ #
+
+def main() -> None:
+    print("Лаба: множества, словари, хэш-таблицы")
+    while True:
+        print("
+Выберите задание: 1 / 2 / 3 (или 0 для выхода)")
+        choice = input(">>> ").strip()
+
+        if choice == "0":
+            print("Выход.")
+            return
+        elif choice == "1":
+            task1()
+        elif choice == "2":
+            task2()
+        elif choice == "3":
+            task3()
+        else:
+            print("Неизвестный пункт меню.")
+
+
+if __name__ == "__main__":
+    main()
