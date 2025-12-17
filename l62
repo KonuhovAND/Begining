@@ -1,0 +1,126 @@
+# 2.py
+import re
+from datetime import datetime
+from collections import defaultdict
+
+def parse_log_line(line):
+    pattern = r'(S+) - - [([^]]+)] "(S+) (S+) (S+)" (d+) (d+)'
+    match = re.match(pattern, line)
+    
+    if not match:
+        return None
+    
+    ip, timestamp, method, url, protocol, status, size = match.groups()
+    
+    return {
+        'ip': ip,
+        'timestamp': timestamp,
+        'method': method,
+        'url': url,
+        'status': int(status),
+        'size': int(size)
+    }
+
+def parse_timestamp(timestamp_str):
+    return datetime.strptime(timestamp_str, '%d/%b/%Y:%H:%M:%S %z')
+
+def analyze_log(filepath, start_time=None, end_time=None):
+    status_sizes = defaultdict(list)
+    error_count = 0
+    total_lines = 0
+    
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            for line in f:
+                log_entry = parse_log_line(line.strip())
+                
+                if not log_entry:
+                    continue
+                
+                total_lines += 1
+                
+                # Фильтр по времени
+                if start_time or end_time:
+                    entry_time = parse_timestamp(log_entry['timestamp'])
+                    if start_time and entry_time < parse_timestamp(start_time):
+                        continue
+                    if end_time and entry_time > parse_timestamp(end_time):
+                        continue
+                
+                status = log_entry['status']
+                size = log_entry['size']
+                
+                status_sizes[status].append(size)
+                
+                if status >= 400:
+                    error_count += 1
+        
+        return status_sizes, error_count, total_lines
+        
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Файл {filepath} не найден")
+    except Exception as e:
+        raise Exception(f"Ошибка при чтении файла: {e}")
+
+def write_report(status_sizes, error_count, output_file='report.txt'):
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write("=== ОТЧЁТ ПО АНАЛИЗУ ЛОГОВ ===
+
+")
+        
+        f.write("1. Средний размер ответа по коду состояния:
+")
+        for status in sorted(status_sizes.keys()):
+            sizes = status_sizes[status]
+            avg_size = sum(sizes) / len(sizes)
+            f.write(f"   Статус {status}: {avg_size:.2f} байт (запросов: {len(sizes)})
+")
+        
+        f.write(f"
+2. Количество ошибок (4XX, 5XX): {error_count}
+")
+        
+        error_statuses = {s: len(sizes) for s, sizes in status_sizes.items() if s >= 400}
+        if error_statuses:
+            f.write("
+   Детализация ошибок:
+")
+            for status, count in sorted(error_statuses.items()):
+                f.write(f"   {status}: {count} запросов
+")
+
+def main():
+    try:
+        log_file = input("Путь к файлу логов (Enter для access.log): ").strip()
+        if not log_file:
+            log_file = "access.log"
+        
+        print("
+Хотите фильтровать по времени? (y/n): ", end='')
+        use_time_filter = input().strip().lower() == 'y'
+        
+        start_time = None
+        end_time = None
+        
+        if use_time_filter:
+            print("Формат: DD/Mon/YYYY:HH:MM:SS +0300")
+            start_time = input("Начало периода (Enter чтобы пропустить): ").strip() or None
+            end_time = input("Конец периода (Enter чтобы пропустить): ").strip() or None
+        
+        print("
+Анализирую логи...")
+        status_sizes, error_count, total_lines = analyze_log(log_file, start_time, end_time)
+        
+        output_file = "report.txt"
+        write_report(status_sizes, error_count, output_file)
+        
+        print(f"✓ Обработано строк: {total_lines}")
+        print(f"✓ Отчёт сохранён в {output_file}")
+        
+    except FileNotFoundError as e:
+        print(f"Ошибка: {e}")
+    except Exception as e:
+        print(f"Ошибка: {e}")
+
+if __name__ == "__main__":
+    main()
