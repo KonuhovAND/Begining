@@ -1,0 +1,52 @@
+from typing import Dict, Set
+
+
+def main():
+    print("Задание 2: Словарь автор -> книги")
+
+    authors: Dict[str, Set[str]] = {}
+
+    print("Ввод книг. Формат: Автор; Название")
+    print("Пустая строка — закончить ввод.")
+
+    while True:
+        s = input("Введите строку: ").strip()
+        if not s:
+            break
+
+        try:
+            if ";" not in s:
+                raise ValueError("Нужен формат: Автор; Название")
+
+            author, title = [part.strip() for part in s.split(";", 1)]
+            if not author or not title:
+                raise ValueError("Автор и название не должны быть пустыми")
+
+            # Комментарий: setdefault создает пустое множество, если автора нет
+            authors.setdefault(author, set()).add(title)
+
+        except ValueError as e:
+            print(f"Ошибка ввода: {e}")
+
+    if not authors:
+        print("Данные не введены.")
+        return
+
+    print("
+Режим поиска. Введите фамилию/имя автора (пустая строка — выход).")
+    while True:
+        q = input("Автор: ").strip()
+        if not q:
+            break
+
+        books = authors.get(q)
+        if not books:
+            print("Такого автора нет в словаре.")
+        else:
+            print("Книги:")
+            for t in sorted(books):
+                print(f"- {t}")
+
+
+if __name__ == "__main__":
+    main()
