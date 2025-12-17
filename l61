@@ -1,0 +1,58 @@
+# 1.py
+import re
+
+def encode(text):
+    if not text:
+        return ""
+    
+    encoded = []
+    count = 1
+    
+    for i in range(1, len(text)):
+        if text[i] == text[i-1]:
+            count += 1
+        else:
+            encoded.append(f"{text[i-1]}{count}")
+            count = 1
+    encoded.append(f"{text[-1]}{count}")
+    
+    return "".join(encoded)
+
+def decode(encoded_text):
+    if not encoded_text:
+        return ""
+    
+    pattern = r'([a-zA-Z])(d+)'
+    matches = re.findall(pattern, encoded_text)
+    
+    decoded = []
+    for char, count in matches:
+        decoded.append(char * int(count))
+    
+    return "".join(decoded)
+
+def main():
+    try:
+        text = input("Введите строку из латинских букв: ").strip()
+        
+        if not text.isalpha():
+            raise ValueError("Строка должна содержать только буквы")
+        
+        encoded = encode(text)
+        print(f"Закодировано: {encoded}")
+        
+        decoded = decode(encoded)
+        print(f"Декодировано: {decoded}")
+        
+        if text == decoded:
+            print("✓ Проверка пройдена: исходная и декодированная строки совпадают")
+        else:
+            print("✗ Ошибка: строки не совпадают")
+            
+    except ValueError as e:
+        print(f"Ошибка ввода: {e}")
+    except Exception as e:
+        print(f"Непредвиденная ошибка: {e}")
+
+if __name__ == "__main__":
+    main()
